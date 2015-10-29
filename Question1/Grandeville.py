@@ -67,29 +67,28 @@ def CalcBackTrackingProb(ntrials, startx, starty, nmoves, eastthresh, westthresh
   FractionPassed = float(nPassed) / float(ntrials)
   return nPassed, FractionPassed
 
-def CalcBackTrackingProb(ntrials, startx, starty, nmoves, eastthresh, westthresh):
-  nMoves, nDirections = nmoves, 4 #Number of moves we're going to make and the number of directions we can travel.
+def CalcNmovesForDist(ntrials, startx, starty, distthresh):
+  nDirections = 4 # Number of directions we can travel.
   xMove = [1, 0, -1,  0] # We're going to randomly pick a number between 0 and 3, and then choose a direction
   yMove = [0, 1,  0, -1] # in x and y corresponding to that number.
-  nPassed = 0
-  # Generate the walking path for this simulation.
-  WalkingPath = np.random.randint(low=0, high=nDirections, size=(ntrials, nMoves))
+  nMovesToHitDistThresh = 0 #Track the total number of moves to hit the threshold across all the trials
   for iTrial in range(ntrials):
-    # Reset the current position and the instantaneous threshold pass flag.
+    # Reset the current position for this trial.
     currentX, currentY = startx, starty
-    PassedEastThresh = False
     # Step through the walking path, and figure out where we end up...
-    for step in WalkingPath[iTrial]:
+    iStep = 0
+    currentDistance = 0.
+    while(currentDistance < distthresh):
+      iStep += 1
+      step = np.random.randint(low=0, high=nDirections, size=1)
       currentX += xMove[step]
       currentY += yMove[step]
-      # Check if at any point on our path, we cross the east threshold...
-      if(currentX > eastthresh): PassedEastThresh = True
-    # See if the east threshold was passed and if our final localtion passes the west threshold.
-    if(PassedEastThresh and (currentX < westthresh)): 
-      nPassed += 1
-  # Calculate the fraction passing the thresholds and pass it back to the main code.
-  FractionPassed = float(nPassed) / float(ntrials)
-  return nPassed, FractionPassed
+      currentDistance = np.sqrt(((currentX - startx)**2) + ((currentY - starty)**2))
+    nMovesToHitDistThresh += iStep
+  # Normalize the running tally of the number of moves by the number of trials, then return the value.
+  AvgNumMoves = float(nMovesToHitDistThresh) / float(ntrials)
+  return AvgNumMoves
+
 
 ####################################
 #  BEGIN MAIN BODY OF THE CODE!!!  #
@@ -97,6 +96,7 @@ def CalcBackTrackingProb(ntrials, startx, starty, nmoves, eastthresh, westthresh
 
 # Get the start time of this calculation
 StartTime = time.time()
+
 # First part of the question:
 print "\nWhat is the probability that the tourist is at least 3 city blocks (as the crow flies) from"
 print "Broadway and Broadway after 10 moves?"
@@ -136,12 +136,27 @@ nMoves = 10
 nPassed, PassFraction = CalcBackTrackingProb(nTrials, xStart, yStart, nMoves, EastThreshold, WestThreshold)
 print "\t", nPassed, "out of", nTrials, "(" + "{:0.10f}".format(PassFraction) + ")."
 
-# Sixth part of the question.
+# Sixth part of the question:
 print "\nWhat is the probability that the tourist is ever east of East 1st Avenue but ends up west"
 print "of West 1st Avenue in 30 moves?"
 nMoves = 30
 nPassed, PassFraction = CalcBackTrackingProb(nTrials, xStart, yStart, nMoves, EastThreshold, WestThreshold)
 print "\t", nPassed, "out of", nTrials, "(" + "{:0.10f}".format(PassFraction) + ")."
+
+# Seventh part of the question:
+nTrials = int(1.e3)
+print "\nWhat is the average number of moves until the first time the tourist is at least 10 city"
+print "blocks (as the crow flies) from Broadway and Broadway."
+DistanceThreshold = 10
+AvgMoves = CalcNmovesForDist(nTrials, xStart, yStart, DistanceThreshold)
+print "\tThe tourist needed to walk an average of", "{:0.10f}".format(AvgMoves), "moves to get", DistanceThreshold, "blocks."
+
+# Eighth and final part of the question:
+print "\nWhat is the average number of moves until the first time the tourist is at least 60 city"
+print "blocks (as the crow flies) from Broadway and Broadway."
+DistanceThreshold = 60
+AvgMoves = CalcNmovesForDist(nTrials, xStart, yStart, DistanceThreshold)
+print "\tThe tourist needed to walk an average of", "{:0.10f}".format(AvgMoves), "moves to get", DistanceThreshold, "blocks."
 
 # Get the end time and report how long this calculation took
 StopTime = time.time()
